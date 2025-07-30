@@ -21,16 +21,37 @@ app.post('/ask-ai',async (req,res)=>{
     }
     try{
     const prompt = `
-        You are a helpful code refactoring assistant. Provide clear, concise, and improved code.
-        Refactor and improve this code snippet:
-         ${codeSnippet} `;
+You are an expert code refactoring assistant. Analyze the following JavaScript/TypeScript code and return your suggestions in JSON format.
 
-    const result = await model.generateContent(prompt);
+Your goal is to:
+1. Simplify complex conditional statements (e.g., deeply nested if/else).
+2. Improve variable and function naming for clarity.
+3. Extract reusable logic into separate functions.
+4. Suggest appropriate design patterns if applicable.
 
-    const aiSuggestion = result.response.text();
-    
+Please respond with a JSON array. Each object in the array must have:
+- "type": (e.g., "Readability", "Complexity Reduction", "Design Pattern")
+- "originalCodeSnippet"
+- "refactoredCodeSnippet"
+- "explanation"
 
-    res.json({ suggestion: aiSuggestion });
+Here is the code snippet:
+\`\`\`javascript
+${codeSnippet}
+\`\`\`
+`;
+
+   const result = await model.generateContent(prompt);
+  const rawResponse = await result.response.text();
+
+  // Try parsing the JSON content (Gemini may add markdown formatting)
+  const jsonStart = rawResponse.indexOf('[');
+  const jsonEnd = rawResponse.lastIndexOf(']');
+  const jsonText = rawResponse.slice(jsonStart, jsonEnd + 1);
+
+  const suggestions = JSON.parse(jsonText);
+
+  res.json({ suggestion: suggestions });
     }catch(error){
        
        res.status(500).json({ error: 'Failed to get AI suggestion.' });
